@@ -25,6 +25,9 @@ WORKDIR /src
 COPY ./o2_patch.diff /o2_patch.diff
 RUN patch -p1 < /o2_patch.diff
 
+# Install Ninja
+RUN apt update -y && apt install -y ninja-build
+
 # Build MongoDB
 ARG NUM_JOBS=
 RUN export GIT_PYTHON_REFRESH=quiet && \
@@ -32,7 +35,8 @@ RUN export GIT_PYTHON_REFRESH=quiet && \
     . /venv/bin/activate && \
     uv pip install requirements_parser && \
     uv pip install -r etc/pip/compile-requirements.txt && \
-    /venv/bin/python3 buildscripts/scons.py install-servers MONGO_VERSION="${MONGO_VERSION}" --release --disable-warnings-as-errors -j ${NUM_JOBS} --linker=gold && \
+    /venv/bin/python3 buildscripts/scons.py --ninja install-servers MONGO_VERSION="${MONGO_VERSION}" --release --disable-warnings-as-errors -j ${NUM_JOBS} --linker=gold && \
+    ninja -C build/install && \
     mv build/install /install && \
     strip --strip-debug /install/bin/mongod && \
     strip --strip-debug /install/bin/mongos && \
